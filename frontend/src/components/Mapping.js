@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useFilesContext } from "../hooks/useFilesContext";
 import { useAuthContext } from "../hooks/useAuthContext";
 import XLSX from "xlsx";
+import { useNavigate } from 'react-router-dom';
 
 const dictionnaires = [
   { name: "Patient" },
@@ -265,6 +266,7 @@ const Mapping = () => {
   const [file, setFile] = useState();
   const [title, setTitle] = useState("");
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   // Handle file upload
   const handleFileUpload = (e) => {
@@ -362,6 +364,44 @@ const Mapping = () => {
     updatedColumnNames[index] = value;
     setModifiedColumnNames(updatedColumnNames);
   };
+  const validateInputs = () => {
+    const mandatoryFields = {
+      Patient: ["PatientNumber"],
+      Encounter: [
+        "PatientNumber",
+        //"Hospital",
+        "StartDateTime",
+        "EndDateTime",
+        "EncounterNumber",
+      ],
+      Diagnosis: [
+        "EncounterNumber",
+        "DiagnosisCode",
+        "DiagnosisVersion",
+        "Sequence",
+      ],
+      Procedure: ["EncounterNumber", "ProcedureVersion", "ProcedureCode"],
+      Transfer: ["PatientNumber", "EncounterNumber", "Ward", "StartDateTime"],
+      Service: ["PatientNumber", "StartDateTime", "Quantity", "ServiceCode"],
+    };
+
+    const missingFields = [];
+
+    // Check if the selectedList is in the mandatoryFields object
+    if (selectedList && mandatoryFields[selectedList]) {
+      const requiredFields = mandatoryFields[selectedList];
+
+      // Check if any of the required fields are missing
+      requiredFields.forEach((field) => {
+        if (!modifiedColumnNames.includes(field)) {
+          missingFields.push(field);
+        }
+      });
+    }
+
+    // Return true if all required fields are filled in, otherwise return false
+    return missingFields.length === 0;
+  };
 
   const resetState = () => {
     setFileData(null);
@@ -377,6 +417,14 @@ const Mapping = () => {
   // };
   const handleSaveChanges = async (e) => {
     e.preventDefault();
+    const isInputsValid = validateInputs();
+
+    if (!isInputsValid) {
+      // Required fields are not filled in, handle accordingly
+      console.log("Required fields are not filled in.");
+      // You can show an error message to the user or handle the scenario as per your requirement.
+      return;
+    }
     const updatedFileData = [...fileData];
     const modifiedColumnIndexes = {};
 
@@ -478,11 +526,14 @@ const Mapping = () => {
       });
     // const fileInput = document.getElementById("fileInput");
     // fileInput.value = null;
+    //const fileInput = document.getElementById("fileInput");
+    //fileInput.value = null;
     setColumnNames([]);
     setModifiedColumnNames([]);
     setFileData([]);
     setIsSaving(false);
     resetState();
+    navigate("/save");
   };
 
   // Enable save button when there are modifications
@@ -492,9 +543,9 @@ const Mapping = () => {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Excel File Uploader</h1>
-      <div className="mb-4 flex justify-evenly items-center	">
+      <div className="mb-4 flex justify-evenly items-center sm:flex-col		">
         <div
-          className="border-solid border-2 border-slate-200 py-1 w-1/4 rounded-lg"
+          className="border-solid border-2 border-slate-200 py-1 w-1/4 rounded-lg sm:w-full	"
           style={{ background: "#36B697" }}
         >
           <h2 className="text-white font-bold px-4 py-2">
@@ -512,7 +563,7 @@ const Mapping = () => {
               ))}
           </ul>
         </div>
-        <label className="block">
+        <label className="block sm:w-full">
           <input
             type="file"
             //accept=".xlsx, .xls"
@@ -527,12 +578,12 @@ const Mapping = () => {
           />
         </label>
 
-        <div className="flex items-center">
+        <div className="flex items-center sm:w-full">
           <h4 className="mr-3">Selected List: {selectedList}</h4>
           <select
             value={selectedList}
             onChange={handleListSelection}
-            className=" border w-auto border-emerald-300 text-emerald-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-600 block  p-2.5 dark:bg-emerald-400 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-emerald-500 dark:focus:border-emerald-500"
+            className=" border w-auto border-emerald-300 text-emerald-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-600 block  p-2.5 dark:bg-emerald-500 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-emerald-500 dark:focus:border-emerald-500"
             style={{ backgorund: "#36B697" }}
           >
             <option value="">Select a List</option>
